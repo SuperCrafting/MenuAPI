@@ -35,7 +35,7 @@ jobs:
       - name: Publish
         if: github.ref == 'refs/heads/main' && github.repository_owner == 'SuperCrafting'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PACKAGE_SECRET }}
           GITHUB_USERNAME: ${{ github.repository_owner }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           BUILD_VERSION: ${{ github.run_number }}
