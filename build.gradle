@@ -53,7 +53,8 @@ publishing {
 
             String owner = System.getenv('GITHUB_USERNAME')
             String repository = System.getenv('GITHUB_REPOSITORY') ?: 'menu-api'
-            url = "https://maven.pkg.github.com/" + owner "/" + repository
+
+            url = "https://maven.pkg.github.com/${owner}/${repository}"
         }
     }
 }
