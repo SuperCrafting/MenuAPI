@@ -26,24 +26,39 @@ final class MenuClickProcessor {
     private static final IntList PLAYER_INVENTORY_SLOTS;
     private static final IntList REVERSED_PLAYER_INVENTORY_SLOTS;
 
-    private static final Set<InventoryAction> DEFAULT_BEHAVIORS = Set.of(
-            InventoryAction.NOTHING,
-            InventoryAction.PICKUP_ALL,
-            InventoryAction.PICKUP_ALL_INTO_BUNDLE,
-            InventoryAction.PICKUP_HALF,
-            InventoryAction.PICKUP_ONE,
-            InventoryAction.PICKUP_SOME,
-            InventoryAction.PICKUP_SOME_INTO_BUNDLE,
-            InventoryAction.PLACE_ALL,
-            InventoryAction.PLACE_ALL_INTO_BUNDLE,
-            InventoryAction.PLACE_ONE,
-            InventoryAction.PLACE_SOME,
-            InventoryAction.PLACE_SOME_INTO_BUNDLE,
-            InventoryAction.HOTBAR_SWAP,
-            InventoryAction.SWAP_WITH_CURSOR
-    );
+    private static final Set<InventoryAction> DEFAULT_BEHAVIORS;
 
     static {
+
+        boolean hasBundleActions;
+        try {
+            InventoryAction.valueOf("PICKUP_ALL_INTO_BUNDLE");
+            hasBundleActions = true;
+        } catch (Exception e){
+            hasBundleActions = false;
+        }
+
+        Set<InventoryAction> defaultBehaviors = new HashSet<>(Arrays.asList(
+                InventoryAction.NOTHING,
+                InventoryAction.PICKUP_ALL,
+                InventoryAction.PICKUP_HALF,
+                InventoryAction.PICKUP_ONE,
+                InventoryAction.PICKUP_SOME,
+                InventoryAction.PLACE_ALL,
+                InventoryAction.PLACE_ONE,
+                InventoryAction.PLACE_SOME,
+                InventoryAction.HOTBAR_SWAP,
+                InventoryAction.SWAP_WITH_CURSOR
+        ));
+
+        if(hasBundleActions) {
+            defaultBehaviors.add(InventoryAction.PICKUP_ALL_INTO_BUNDLE);
+            defaultBehaviors.add(InventoryAction.PLACE_ALL_INTO_BUNDLE);
+            defaultBehaviors.add(InventoryAction.PICKUP_SOME_INTO_BUNDLE);
+            defaultBehaviors.add(InventoryAction.PLACE_SOME_INTO_BUNDLE);
+        }
+
+        DEFAULT_BEHAVIORS = Collections.unmodifiableSet(defaultBehaviors);
 
         IntList prioritySlots = new IntArrayList(9 * 4);
         // First 9 slots are the hotbar
