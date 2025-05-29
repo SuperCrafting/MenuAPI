@@ -51,6 +51,8 @@ public final class MenuAPI extends JavaPlugin {
 
     private static class ExampleMenu extends Menu {
 
+        private boolean working = false;
+
         public ExampleMenu(Inventory inventory) {
             super(Component.text("Example menu"), 4);
             setSlot(4, new InventorySlot(inventory, 0));
@@ -60,6 +62,14 @@ public final class MenuAPI extends JavaPlugin {
                 @Override
                 public void click(Click click) {
                     click.player().closeInventory();
+                }
+            });
+
+            setSlot(9 * 4 - 2, new MenuItem(new ItemStack(Material.LEVER)){
+                @Override
+                public void click(Click click) {
+                    working = !working;
+                    click.player().sendMessage(Component.text("Working: " + working, NamedTextColor.YELLOW));
                 }
             });
         }

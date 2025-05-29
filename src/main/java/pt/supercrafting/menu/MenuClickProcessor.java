@@ -86,6 +86,11 @@ final class MenuClickProcessor {
 
         event.setCancelled(true);
 
+        if(event.getHotbarButton() != -1) {
+            clickHotBar(event);
+            return;
+        }
+
         Player player = (Player) event.getWhoClicked();
 
         int index = event.getSlot();
@@ -103,7 +108,6 @@ final class MenuClickProcessor {
             slot.add(add);
 
             cursor = add.getResult();
-
             handled = add.isSuccessful();
 
         } else {
@@ -179,6 +183,42 @@ final class MenuClickProcessor {
 
         }
 
+    }
+
+    private void clickHotBar(@NotNull InventoryClickEvent event) {
+
+        int hotbarButton = event.getHotbarButton();
+        int index = event.getSlot();
+
+        Player player = (Player) event.getWhoClicked();
+        MenuSlot slot = menu.getSlot(index);
+
+        MenuSlot.Take take = new MenuSlot.PlayerTake(MenuSlot.Take.Type.ALL, player);
+        slot.take(take);
+
+        ItemStack result = take.getResult();
+        Inventory inventory = player.getInventory();
+
+        ItemStack hotbarItem =inventory.getItem(hotbarButton);
+        if(hotbarItem != null && !hotbarItem.isEmpty()) {
+
+            MenuSlot.Add add = new MenuSlot.PlayerAdd(hotbarItem, hotbarItem.getAmount(), player);
+            slot.add(add);
+
+            ItemStack remaining = add.getResult();
+            if(remaining.isEmpty())
+                remaining = ItemStack.empty();
+
+            inventory.setItem(hotbarButton, remaining);
+        }
+
+        hotbarItem = inventory.getItem(hotbarButton); // Updated
+        if(hotbarItem == null || hotbarItem.isEmpty())
+            player.getInventory().setItem(hotbarButton, result);
+        else
+            player.give(hotbarItem);
+
+        menu.refresh();
     }
 
     private void clickInventory(@NotNull InventoryClickEvent event) {
@@ -327,7 +367,7 @@ final class MenuClickProcessor {
         if(!overFlow.isEmpty())
             player.give(overFlow);
 
-        Bukkit.getScheduler().runTaskLater(plugin, menu::refresh, 1);
+        Bukkit.getScheduler().runTaskLater(plugin, menu::refresh, 1); // Think about a better way to do this
 
     }
 
