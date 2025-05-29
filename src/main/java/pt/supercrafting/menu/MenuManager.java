@@ -1,5 +1,7 @@
 package pt.supercrafting.menu;
 
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
@@ -7,12 +9,14 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import pt.supercrafting.menu.editor.MenuUpdatable;
 
 import java.util.Objects;
 
@@ -22,6 +26,8 @@ public final class MenuManager implements Listener, Runnable {
 
     private final Plugin plugin;
     private BukkitTask task;
+
+    private int ticks = 0;
 
     private MenuManager(@NotNull Plugin plugin) {
         this.plugin = Objects.requireNonNull(plugin);
@@ -56,6 +62,24 @@ public final class MenuManager implements Listener, Runnable {
 
     @Override
     public void run() {
+
+        this.ticks++;
+        for (Player player : Bukkit.getOnlinePlayers()) {
+
+            InventoryView view = player.getOpenInventory();
+            Inventory topInventory = view.getTopInventory();
+            if(!(topInventory.getHolder() instanceof Menu menu))
+                continue;
+
+            if(!(menu instanceof MenuUpdatable updatable))
+                continue;
+
+            int rate = updatable.updateRate();
+            if(rate <= 0 || ticks % rate != 0)
+                continue;
+
+            updatable.update();
+        }
 
     }
 

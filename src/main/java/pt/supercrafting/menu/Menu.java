@@ -13,9 +13,13 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
+import pt.supercrafting.menu.editor.MenuEditor;
+import pt.supercrafting.menu.editor.decoration.MenuDecoration;
 import pt.supercrafting.menu.slot.ForbiddenSlot;
 import pt.supercrafting.menu.slot.MenuSlot;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -26,8 +30,10 @@ public abstract class Menu implements InventoryHolder {
     private final Int2ObjectMap<MenuSlot> slots;
     private Int2ObjectMap<MenuSlot> slotView;
 
-    final MenuClickProcessor clickProcessor;
+    private final Map<UUID, MenuEditor> editors = new HashMap<>();
+    private UUID decoratorId;
 
+    final MenuClickProcessor clickProcessor;
     private final Inventory handle;
 
     public Menu(@NotNull Component title, int rows) {
@@ -55,6 +61,10 @@ public abstract class Menu implements InventoryHolder {
 
     public void refresh() {
         this.handle.clear();
+
+        for (MenuEditor editor : this.editors.values())
+            editor.edit(this, this.handle);
+
         for (Int2ObjectMap.Entry<MenuSlot> entry : this.slots.int2ObjectEntrySet()) {
 
             int index = entry.getIntKey();
@@ -64,6 +74,7 @@ public abstract class Menu implements InventoryHolder {
             else
                 this.handle.setItem(index, ForbiddenSlot.INSTANCE.icon());
         }
+
     }
 
     public boolean open(@NotNull Player player) {
@@ -91,6 +102,32 @@ public abstract class Menu implements InventoryHolder {
         if(this.slotView == null)
             this.slotView = Int2ObjectMaps.unmodifiable(this.slots);
         return this.slotView;
+    }
+
+    public UUID registerEditor(@NotNull MenuEditor editor) {
+        Objects.requireNonNull(editor);
+        UUID id = UUID.randomUUID();
+        this.editors.put(id, editor);
+        return id;
+    }
+
+    public void unregisterEditor(@NotNull UUID id) {
+        Objects.requireNonNull(id);
+        this.editors.remove(id);
+    }
+
+    protected void decorate(@Nullable MenuDecoration decoration) {
+        if(this.decoratorId != null) {
+            unregisterEditor(this.decoratorId);
+            this.decoratorId = null;
+        }
+
+        if (decoration != null)
+            this.decoratorId = registerEditor(decoration);
+    }
+
+    public int size() {
+        return this.getInventory().getSize();
     }
 
     @Override

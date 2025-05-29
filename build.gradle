@@ -29,3 +29,14 @@ dependencies {
 test {
     useJUnitPlatform()
 }
+
+jar {
+
+    doLast {
+        copy {
+            from jar.outputs.files[0]
+            into "C:\\Users\\Joao\\Documents\\Server\\plugins"
+        }
+    }
+
+}
