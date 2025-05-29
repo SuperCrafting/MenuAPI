@@ -2,8 +2,10 @@ package pt.supercrafting.menu;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-import it.unimi.dsi.fastutil.ints.IntArraySet;
-import it.unimi.dsi.fastutil.ints.IntSet;
+import it.unimi.dsi.fastutil.ints.*;
+import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.*;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
@@ -11,12 +13,16 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
+import pt.supercrafting.menu.item.MenuItem;
+import pt.supercrafting.menu.slot.MenuSlot;
 
 import java.util.Objects;
 import java.util.Set;
 
 @ApiStatus.Internal
 final class MenuClickProcessor {
+
+    private static final IntList PLAYER_INVENTORY_SLOTS = new IntArrayList(9 * 4);
 
     private static final Set<InventoryAction> DEFAULT_BEHAVIORS = Set.of(
             InventoryAction.NOTHING,
@@ -34,6 +40,16 @@ final class MenuClickProcessor {
             InventoryAction.HOTBAR_SWAP,
             InventoryAction.SWAP_WITH_CURSOR
     );
+
+    static {
+        // First 9 slots are the hotbar
+        for (int i = 9; i > 0; i--)
+            PLAYER_INVENTORY_SLOTS.add(i);
+
+        // Next 36 slots are the main inventory
+        for (int i = 9; i < 9 * 3; i++)
+            PLAYER_INVENTORY_SLOTS.add(i);
+    }
 
     private final Menu menu;
 
@@ -55,6 +71,90 @@ final class MenuClickProcessor {
 
     private void clickMenu(@NotNull InventoryClickEvent event) {
 
+        event.setCancelled(true);
+
+        Player player = (Player) event.getWhoClicked();
+
+        int index = event.getSlot();
+        MenuSlot slot = menu.getSlot(index);
+
+        ClickType clickType = event.getClick();
+        ItemStack cursor = event.getCursor();
+        boolean isAdd = !cursor.isEmpty() && !clickType.isShiftClick();
+
+        boolean handled;
+        if(isAdd) {
+
+            int amount = clickType.isLeftClick() ? cursor.getAmount() : 1;
+            MenuSlot.Add add = new MenuSlot.PlayerAdd(cursor, amount, player);
+            slot.add(add);
+
+            cursor = add.getResult();
+
+            handled = add.isSuccessful();
+
+        } else {
+
+            MenuSlot.Take.Type type = clickType.isLeftClick() || clickType.isShiftClick() ? MenuSlot.Take.Type.ALL : MenuSlot.Take.Type.HALF;
+            MenuSlot.Take take = new MenuSlot.PlayerTake(type, player);
+            slot.take(take);
+
+            boolean toCursor = !clickType.isShiftClick();
+            if(toCursor) {
+                cursor = take.getResult();
+            } else {
+
+                ItemStack result = take.getResult();
+                Inventory inventory = player.getInventory();
+                for (int playerSlot : PLAYER_INVENTORY_SLOTS) {
+
+                    ItemStack playerItem = inventory.getItem(playerSlot);
+                    if(playerItem == null)
+                        playerItem = ItemStack.empty();
+
+                    if(!playerItem.isEmpty() && !playerItem.isSimilar(result))
+                        continue;
+
+
+                    int allowedToAdd = playerItem.isEmpty() ? result.getMaxStackSize() : playerItem.getMaxStackSize() - playerItem.getAmount();
+                    if(allowedToAdd <= 0)
+                        continue;
+
+                    int toAdd = Math.min(allowedToAdd, result.getAmount());
+                    ItemStack newPlayerItem = result.asQuantity(playerItem.getAmount() + toAdd);
+                    inventory.setItem(playerSlot, newPlayerItem);
+
+                    result = result.asQuantity(result.getAmount() - toAdd);
+                    if(result.getAmount() <= 0)
+                        break;
+
+                }
+
+                if(!result.isEmpty()) {
+                    MenuSlot.Add add = new MenuSlot.PlayerAdd(result, result.getAmount(), player);
+                    slot.add(add);
+
+                    ItemStack remaining = add.getResult();
+                    if(!remaining.isEmpty()) // Drop overflow items
+                        player.getWorld().dropItemNaturally(player.getLocation(), remaining);
+                }
+
+            }
+
+            handled = take.isSuccessful();
+
+        }
+
+        if(handled) {
+            player.setItemOnCursor(cursor);
+            menu.refresh();
+        } else if(slot instanceof MenuItem menuItem) {
+
+            MenuItem.Click click = MenuItem.Click.from(event);
+            menuItem.click(click);
+
+        }
+
     }
 
     private void clickInventory(@NotNull InventoryClickEvent event) {
@@ -66,11 +166,49 @@ final class MenuClickProcessor {
         InventoryAction action = event.getAction();
         ClickType clickType = event.getClick();
 
+        if(clickType == ClickType.DOUBLE_CLICK) {
+            event.setCancelled(true);
+            // Todo: recode this behavior
+            return;
+        }
+
         if(DEFAULT_BEHAVIORS.contains(action))
             return;
 
-        if(action == InventoryAction.COLLECT_TO_CURSOR) {
-            // Todo: recode this behavior
+        if(action == InventoryAction.MOVE_TO_OTHER_INVENTORY) {
+            event.setCancelled(true);
+
+            int toMove = currentItem.getAmount();
+            if(toMove <= 0)
+                return;
+
+            ItemStack itemStack = currentItem.clone();
+            Player player = (Player) event.getWhoClicked();
+            boolean handled = false;
+
+            for (Int2ObjectMap.Entry<MenuSlot> entry : menu.getSlots().int2ObjectEntrySet()) {
+
+                MenuSlot slot = entry.getValue();
+
+                MenuSlot.Add add = new MenuSlot.PlayerAdd(itemStack, toMove, player);
+                slot.add(add);
+
+                handled = handled || add.isSuccessful();
+
+                ItemStack remaining = add.getResult();
+
+                itemStack = remaining;
+                toMove = remaining.getAmount();
+
+                if(toMove <= 0)
+                    break;
+
+            }
+
+            if(handled)
+                menu.refresh();
+
+            event.setCurrentItem(itemStack);
             return;
         }
 
@@ -94,6 +232,8 @@ final class MenuClickProcessor {
         Inventory menuInventory = view.getTopInventory();
         if(!slotsByInventory.containsKey(menuInventory)) // Only drags player inventory
             return;
+
+        event.setCancelled(true);
 
     }
 

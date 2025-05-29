@@ -1,0 +1,7 @@
+name: MenuAPI
+version: 1.0.0
+main: pt.supercrafting.menu.plugin.MenuAPI
+api-version: 1.21
+author: Super_Crafting
+commands:
+  test:
