@@ -31,12 +31,3 @@ jobs:
         with:
           name: Artifacts
           path: build/libs/*.jar
-
-      - name: Publish
-        if: github.ref == 'refs/heads/main' && github.repository_owner == 'SuperCrafting'
-        env:
-          GITHUB_TOKEN: ${{ secrets.PACKAGE_SECRET }}
-          GITHUB_USERNAME: ${{ github.repository_owner }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          BUILD_VERSION: ${{ github.run_number }}
-        run: ./gradlew publish
