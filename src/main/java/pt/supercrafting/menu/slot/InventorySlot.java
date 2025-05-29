@@ -7,7 +7,15 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
-public record InventorySlot(Inventory inventory, int index) implements MenuSlot {
+public class InventorySlot implements MenuSlot {
+
+    private final Inventory inventory;
+    private final int index;
+
+    public InventorySlot(@NotNull Inventory inventory, int index) {
+        this.inventory = Objects.requireNonNull(inventory);
+        this.index = index;
+    }
 
     @Override
     public @NotNull ItemStack itemStack() {
