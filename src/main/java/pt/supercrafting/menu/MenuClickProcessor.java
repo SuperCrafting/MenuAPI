@@ -11,14 +11,13 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import pt.supercrafting.menu.item.MenuItem;
 import pt.supercrafting.menu.slot.MenuSlot;
 
-import java.util.Collections;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 @ApiStatus.Internal
 final class MenuClickProcessor {
@@ -273,6 +272,46 @@ final class MenuClickProcessor {
             return;
 
         event.setCancelled(true);
+
+        Inventory playerInventory = view.getBottomInventory();
+        if(slotsByInventory.containsKey(playerInventory) && slotsByInventory.containsKey(menuInventory))
+            return;
+
+        IntList draggedSlots = new IntArrayList(slotsByInventory.get(menuInventory));
+        ItemStack cursor = event.getOldCursor();
+        if(cursor.isEmpty())
+            return;
+
+        event.setCancelled(false);
+
+        int amountPerSlot = (int) Math.floor((double) cursor.getAmount() / draggedSlots.size());
+        int remaining = cursor.getAmount() % draggedSlots.size();
+
+        Player player = (Player) event.getWhoClicked();
+        List<ItemStack> overFlow = new ArrayList<>(draggedSlots.size());
+
+        int giveBack = remaining;
+        for (int slot : draggedSlots) {
+
+            MenuSlot menuSlot = menu.getSlot(slot);
+
+            MenuSlot.Add add = new MenuSlot.PlayerAdd(cursor, amountPerSlot, player);
+            menuSlot.add(add);
+
+            ItemStack result = add.getResult();
+            if(!result.isEmpty() && !result.isSimilar(cursor)) {
+                overFlow.add(result);
+            } else if(result.isSimilar(cursor) && !add.isSuccessful())
+                giveBack += amountPerSlot;
+
+        }
+
+        ItemStack newCursor = cursor.asQuantity(giveBack);
+        event.setCursor(newCursor);
+
+        Plugin plugin = MenuManager.instance.getPlugin();
+        player.getScheduler().runDelayed(plugin, (s) -> {}, menu::refresh, 1);
+        //Bukkit.getScheduler().runTaskLater(MenuManager.instance.getPlugin(), menu::refresh, 1);
 
     }
 

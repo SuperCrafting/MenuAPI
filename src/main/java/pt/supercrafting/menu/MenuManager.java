@@ -2,6 +2,7 @@ package pt.supercrafting.menu;
 
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
@@ -9,6 +10,7 @@ import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -16,13 +18,14 @@ import java.util.Objects;
 
 public final class MenuManager implements Listener, Runnable {
 
-    private static MenuManager instance;
+    static MenuManager instance;
 
+    private final Plugin plugin;
     private BukkitTask task;
 
     private MenuManager(@NotNull Plugin plugin) {
-        Objects.requireNonNull(plugin);
-        plugin.getServer().getPluginManager().registerEvents(this, plugin);
+        this.plugin = Objects.requireNonNull(plugin);
+        this.plugin.getServer().getPluginManager().registerEvents(this, plugin);
         this.task = plugin.getServer().getScheduler().runTaskTimer(plugin, this, 1L, 1L);
     }
 
@@ -37,10 +40,18 @@ public final class MenuManager implements Listener, Runnable {
         if(instance == null)
             return;
 
+        HandlerList.unregisterAll(instance);
+
         instance.task.cancel();
         instance.task = null;
 
         instance = null;
+    }
+
+    @ApiStatus.Internal
+    @NotNull
+    public Plugin getPlugin() {
+        return plugin;
     }
 
     @Override
