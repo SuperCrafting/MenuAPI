@@ -2,6 +2,7 @@ package pt.supercrafting.menu;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import io.papermc.paper.entity.PlayerGiveResult;
 import it.unimi.dsi.fastutil.ints.*;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
@@ -46,7 +47,7 @@ final class MenuClickProcessor {
 
         IntList prioritySlots = new IntArrayList(9 * 4);
         // First 9 slots are the hotbar
-        for (int i = 9; i > 0; i--)
+        for (int i = 8; i >= 0; i--)
             prioritySlots.add(i);
 
         // Next 36 slots are the main inventory
@@ -118,7 +119,19 @@ final class MenuClickProcessor {
 
                 ItemStack result = take.getResult();
                 Inventory inventory = player.getInventory();
-                for (int playerSlot : PLAYER_INVENTORY_SLOTS) {
+
+                IntList slots = new IntArrayList(PLAYER_INVENTORY_SLOTS.size());
+                for (int i = 0; i < inventory.getSize(); i++) {
+                    ItemStack itemStack = inventory.getItem(i);
+                    if(itemStack != null && !itemStack.isEmpty() && itemStack.isSimilar(result))
+                        slots.add(i);
+                }
+
+                for (int i : PLAYER_INVENTORY_SLOTS)
+                    if(!slots.contains(i))
+                        slots.add(i);
+
+                for (int playerSlot : slots) {
 
                     ItemStack playerItem = inventory.getItem(playerSlot);
                     if(playerItem == null)
@@ -126,7 +139,6 @@ final class MenuClickProcessor {
 
                     if(!playerItem.isEmpty() && !playerItem.isSimilar(result))
                         continue;
-
 
                     int allowedToAdd = playerItem.isEmpty() ? result.getMaxStackSize() : playerItem.getMaxStackSize() - playerItem.getAmount();
                     if(allowedToAdd <= 0)
@@ -310,8 +322,12 @@ final class MenuClickProcessor {
         event.setCursor(newCursor);
 
         Plugin plugin = MenuManager.instance.getPlugin();
-        player.getScheduler().runDelayed(plugin, (s) -> {}, menu::refresh, 1);
-        //Bukkit.getScheduler().runTaskLater(MenuManager.instance.getPlugin(), menu::refresh, 1);
+        //player.getScheduler().runDelayed(plugin, (s) -> {}, menu::refresh, 3);
+
+        if(!overFlow.isEmpty())
+            player.give(overFlow);
+
+        Bukkit.getScheduler().runTaskLater(plugin, menu::refresh, 1);
 
     }
 
