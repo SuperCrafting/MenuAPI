@@ -16,13 +16,15 @@ import org.jetbrains.annotations.NotNull;
 import pt.supercrafting.menu.item.MenuItem;
 import pt.supercrafting.menu.slot.MenuSlot;
 
+import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 
 @ApiStatus.Internal
 final class MenuClickProcessor {
 
-    private static final IntList PLAYER_INVENTORY_SLOTS = new IntArrayList(9 * 4);
+    private static final IntList PLAYER_INVENTORY_SLOTS;
+    private static final IntList REVERSED_PLAYER_INVENTORY_SLOTS;
 
     private static final Set<InventoryAction> DEFAULT_BEHAVIORS = Set.of(
             InventoryAction.NOTHING,
@@ -42,13 +44,21 @@ final class MenuClickProcessor {
     );
 
     static {
+
+        IntList prioritySlots = new IntArrayList(9 * 4);
         // First 9 slots are the hotbar
         for (int i = 9; i > 0; i--)
-            PLAYER_INVENTORY_SLOTS.add(i);
+            prioritySlots.add(i);
 
         // Next 36 slots are the main inventory
-        for (int i = 9; i < 9 * 3; i++)
-            PLAYER_INVENTORY_SLOTS.add(i);
+        for (int i = 9; i < 9 * 4; i++)
+            prioritySlots.add(i);
+
+        PLAYER_INVENTORY_SLOTS = IntLists.unmodifiable(prioritySlots);
+
+        IntList reversedPrioritySlots = new IntArrayList(prioritySlots);
+        Collections.reverse(reversedPrioritySlots);
+        REVERSED_PLAYER_INVENTORY_SLOTS = IntLists.unmodifiable(reversedPrioritySlots);
     }
 
     private final Menu menu;
@@ -70,6 +80,9 @@ final class MenuClickProcessor {
     }
 
     private void clickMenu(@NotNull InventoryClickEvent event) {
+
+        if(event.getAction() == InventoryAction.CLONE_STACK)
+            return;
 
         event.setCancelled(true);
 
@@ -159,18 +172,44 @@ final class MenuClickProcessor {
 
     private void clickInventory(@NotNull InventoryClickEvent event) {
 
-        ItemStack currentItem = event.getCurrentItem();
-        if(currentItem == null || currentItem.isEmpty())
-            return;
-
         InventoryAction action = event.getAction();
         ClickType clickType = event.getClick();
 
-        if(clickType == ClickType.DOUBLE_CLICK) {
+        if(clickType == ClickType.DOUBLE_CLICK && action == InventoryAction.COLLECT_TO_CURSOR) {
             event.setCancelled(true);
-            // Todo: recode this behavior
+
+            Player player = (Player) event.getWhoClicked();
+            Inventory playerInventory = player.getInventory();
+
+            ItemStack cursor = event.getCursor();
+            for (int slot : REVERSED_PLAYER_INVENTORY_SLOTS) {
+
+                ItemStack playerItem = playerInventory.getItem(slot);
+                if(playerItem == null)
+                    playerItem = ItemStack.empty();
+                if(playerItem.isEmpty() || !playerItem.isSimilar(cursor))
+                    continue;
+
+                int allowedToAdd = cursor.getMaxStackSize() - cursor.getAmount();
+                if(allowedToAdd <= 0)
+                    continue;
+
+                int toAdd = Math.min(allowedToAdd, playerItem.getAmount());
+                ItemStack newCursor = cursor.asQuantity(cursor.getAmount() + toAdd);
+
+                ItemStack newPlayerItem = playerItem.asQuantity(playerItem.getAmount() - toAdd);
+                playerInventory.setItem(slot, newPlayerItem);
+                cursor = newCursor;
+
+            }
+
+            player.setItemOnCursor(cursor);
             return;
         }
+
+        ItemStack currentItem = event.getCurrentItem();
+        if(currentItem == null || currentItem.isEmpty())
+            return;
 
         if(DEFAULT_BEHAVIORS.contains(action))
             return;
