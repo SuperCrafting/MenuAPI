@@ -158,6 +158,9 @@ final class MenuPaginationImpl implements MenuPagination {
     @Override
     public void edit(@NotNull Menu menu, @NotNull Inventory inventory) {
 
+        if(this.items.isEmpty())
+            return;
+
         if(this.itemsPerPage == null || this.itemsPerPage.isEmpty())
             this.computeItemsPerPage(this.items);
 
