@@ -17,11 +17,6 @@ public record ForbiddenSlot(@NotNull ItemStack icon) implements MenuSlot {
     }
 
     @Override
-    public void icon(@NotNull ItemStack itemStack) {
-
-    }
-
-    @Override
     public @NotNull ItemStack itemStack() {
         return ItemStack.empty();
     }

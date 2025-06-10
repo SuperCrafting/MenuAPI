@@ -57,11 +57,6 @@ public class MenuItem implements MenuSlot {
 
     }
 
-    @Override
-    public void icon(@NotNull ItemStack itemStack) {
-
-    }
-
     protected final void superTake(@NotNull Take take) {
         MenuSlot.super.take(take);
     }

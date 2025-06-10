@@ -5,7 +5,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.plugin.java.JavaPlugin;
 import pt.supercrafting.menu.MenuManager;
 
-public final class MenuAPI extends JavaPlugin {
+public final class MenuPlugin extends JavaPlugin {
 
     @Override
     public void onEnable() {

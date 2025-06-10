@@ -18,10 +18,6 @@ public interface MenuSlot {
 
     // Displayed item
 
-    default void icon(@NotNull ItemStack itemStack) {
-        itemStack(itemStack);
-    }
-
     @NotNull
     default ItemStack icon() {
         return itemStack();

@@ -45,7 +45,7 @@ public abstract class Menu implements InventoryHolder {
     }
 
     @ApiStatus.Internal
-    private Menu(@NotNull Component title, @NotNull InventoryType type, int size) {
+    protected Menu(@NotNull Component title, @NotNull InventoryType type, int size) {
 
         this.slots = new Int2ObjectArrayMap<>(size);
         for (int i = 0; i < size; i++)
