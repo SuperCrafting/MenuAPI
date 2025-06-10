@@ -81,6 +81,12 @@ final class MenuPaginationImpl implements MenuPagination {
 
     @Override
     public void setPage(int page) {
+
+        if(this.maxPage == 0) {
+            this.page = 0; // No items, reset to page 0
+            return;
+        }
+
         if(page < 0 || page >= maxPage)
             throw new IllegalArgumentException("Page must be between 0 and " + (maxPage - 1));
         this.page = page;
