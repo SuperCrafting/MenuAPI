@@ -351,8 +351,9 @@ final class MenuClickProcessor {
 
         event.setCancelled(false);
 
-        int amountPerSlot = (int) Math.floor((double) cursor.getAmount() / draggedSlots.size());
-        int remaining = cursor.getAmount() % draggedSlots.size();
+        boolean single = event.getType() == DragType.SINGLE;
+        int amountPerSlot = single ? 1 : (int) Math.floor((double) cursor.getAmount() / draggedSlots.size());
+        int remaining = single ? cursor.getAmount() - draggedSlots.size() : cursor.getAmount() % draggedSlots.size();
 
         Player player = (Player) event.getWhoClicked();
         List<ItemStack> overFlow = new ArrayList<>(draggedSlots.size());
