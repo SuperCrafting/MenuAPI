@@ -127,7 +127,7 @@ public interface MenuSlot {
             ItemStack newItemStack = itemStack.asQuantity(amount);
             itemStack(newItemStack);
 
-            ItemStack result = ItemStack.empty();
+            ItemStack result = itemStack.asQuantity(itemStack.getAmount() - amount);
             add.setResult(result);
             return;
         }
