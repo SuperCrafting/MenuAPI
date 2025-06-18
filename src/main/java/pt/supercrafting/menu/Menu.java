@@ -1,5 +1,6 @@
 package pt.supercrafting.menu;
 
+import it.unimi.dsi.fastutil.Function;
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
@@ -15,6 +16,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 import pt.supercrafting.menu.editor.MenuEditor;
 import pt.supercrafting.menu.editor.decoration.MenuDecoration;
+import pt.supercrafting.menu.handler.MenuHandler;
 import pt.supercrafting.menu.slot.ForbiddenSlot;
 import pt.supercrafting.menu.slot.MenuSlot;
 
@@ -22,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 public abstract class Menu implements InventoryHolder {
 
@@ -30,8 +33,10 @@ public abstract class Menu implements InventoryHolder {
     private final Int2ObjectMap<MenuSlot> slots;
     private Int2ObjectMap<MenuSlot> slotView;
 
-    private final Map<UUID, MenuEditor> editors = new HashMap<>();
+    private final Map<UUID, MenuEditor> editors = new HashMap<>(2);
     private UUID decoratorId;
+
+    private final Map<UUID, MenuHandler> handler = new HashMap<>(2);
 
     final MenuClickProcessor clickProcessor;
     private final Inventory handle;
@@ -84,7 +89,12 @@ public abstract class Menu implements InventoryHolder {
 
         refresh();
 
+        boolean wasViewer = this.handle.getViewers().contains(player);
         player.openInventory(this.handle);
+
+        if(!wasViewer)
+            callHandler(handler -> handler.onOpen(player));
+
         return true;
     }
 
@@ -124,6 +134,26 @@ public abstract class Menu implements InventoryHolder {
 
         if (decoration != null)
             this.decoratorId = registerEditor(decoration);
+    }
+
+    @NotNull
+    public UUID registerHandler(@NotNull MenuHandler handler) {
+        Objects.requireNonNull(handler, "handler cannot be null");
+        UUID id = UUID.randomUUID();
+        this.handler.put(id, handler);
+        return id;
+    }
+
+    public void unregisterHandler(@NotNull UUID id) {
+        Objects.requireNonNull(id, "id cannot be null");
+        this.handler.remove(id);
+    }
+
+    void callHandler(@NotNull Consumer<MenuHandler> consumer) {
+        Objects.requireNonNull(consumer, "consumer cannot be null");
+
+        for (MenuHandler handler : this.handler.values())
+            consumer.accept(handler);
     }
 
     public int size() {

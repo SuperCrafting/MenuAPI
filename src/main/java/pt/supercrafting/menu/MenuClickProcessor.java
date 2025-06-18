@@ -1,5 +1,7 @@
 package pt.supercrafting.menu;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import io.papermc.paper.entity.PlayerGiveResult;
@@ -15,10 +17,12 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
+import pt.supercrafting.menu.editor.MenuUpdatable;
 import pt.supercrafting.menu.item.MenuItem;
 import pt.supercrafting.menu.slot.MenuSlot;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 @ApiStatus.Internal
 final class MenuClickProcessor {
@@ -77,6 +81,9 @@ final class MenuClickProcessor {
     }
 
     private final Menu menu;
+    private final Cache<UUID, Boolean> closeCache = CacheBuilder.newBuilder()
+            .expireAfterWrite(250, TimeUnit.MILLISECONDS)
+            .build();
 
     public MenuClickProcessor(@NotNull Menu menu) {
         this.menu = Objects.requireNonNull(menu);
@@ -378,17 +385,25 @@ final class MenuClickProcessor {
         event.setCursor(newCursor);
 
         Plugin plugin = MenuManager.instance.getPlugin();
-        //player.getScheduler().runDelayed(plugin, (s) -> {}, menu::refresh, 3);
+        player.getScheduler().runDelayed(plugin, (s) -> menu.refresh(), () -> {}, 3);
 
         if(!overFlow.isEmpty())
             player.give(overFlow);
 
-        Bukkit.getScheduler().runTaskLater(plugin, menu::refresh, 1); // Think about a better way to do this
+        //Bukkit.getScheduler().runTaskLater(plugin, menu::refresh, 1); // Think about a better way to do this
 
     }
 
     public void close(@NotNull InventoryCloseEvent event) {
 
+        Player player = (Player) event.getPlayer();
+        UUID playerId = player.getUniqueId();
+        if(closeCache.getIfPresent(playerId) != null)
+            return;
+
+        closeCache.put(playerId, true);
+
+        menu.callHandler(menuHandler -> menuHandler.onClose(player));
     }
 
 }
