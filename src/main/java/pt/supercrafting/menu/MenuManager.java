@@ -1,6 +1,7 @@
 package pt.supercrafting.menu;
 
 import org.bukkit.Bukkit;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -9,7 +10,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
-import org.bukkit.inventory.Inventory;
+import org.bukkit.event.inventory.InventoryOpenEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
@@ -18,7 +20,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import pt.supercrafting.menu.editor.MenuUpdatable;
 
+import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class MenuManager implements Listener, Runnable {
 
@@ -26,6 +31,8 @@ public final class MenuManager implements Listener, Runnable {
 
     private final Plugin plugin;
     private BukkitTask task;
+
+    final Map<UUID, Menu> currentMenus = new ConcurrentHashMap<>();
 
     private int ticks = 0;
 
@@ -67,10 +74,7 @@ public final class MenuManager implements Listener, Runnable {
         for (Player player : Bukkit.getOnlinePlayers()) {
 
             InventoryView view = player.getOpenInventory();
-            Inventory topInventory = view.getTopInventory();
-            if(!(topInventory.getHolder() instanceof Menu menu))
-                continue;
-
+            Menu menu = fromView(view);
             if(!(menu instanceof MenuUpdatable updatable))
                 continue;
 
@@ -111,10 +115,31 @@ public final class MenuManager implements Listener, Runnable {
             return;
 
         menu.clickProcessor.close(event);
+
+        HumanEntity player = event.getPlayer();
+        currentMenus.remove(player.getUniqueId());
+    }
+
+    @EventHandler
+    public void onQuit(@NotNull PlayerQuitEvent event) {
+
+        Player player = event.getPlayer();
+        Menu menu = currentMenus.remove(player.getUniqueId());
+        if(menu != null)
+            menu.clickProcessor.close(new InventoryCloseEvent(menu.view, InventoryCloseEvent.Reason.DISCONNECT));
+
     }
 
     private static @Nullable Menu fromView(@NotNull InventoryView view) {
-        return view.getTopInventory().getHolder() instanceof Menu menu ? menu : null;
+
+        HumanEntity player = view.getPlayer();
+        UUID playerId = player.getUniqueId();
+
+        Menu menu = instance.currentMenus.get(playerId);
+        return menu != null && menu.view.equals(view) ? menu : null;
+
+        //return view instanceof Menu.MenuView menuView ? menuView.menu() : null;
+        //return view.getTopInventory().getHolder() instanceof Menu menu ? menu : null;
     }
 
 }

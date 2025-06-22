@@ -2,6 +2,7 @@ package pt.supercrafting.menu.editor.decoration;
 
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import pt.supercrafting.menu.Menu;
@@ -26,7 +27,7 @@ abstract class MenuDecorations implements MenuDecoration {
     protected abstract int @NotNull[] generateSlots(int rows);
 
     @Override
-    public final void edit(@NotNull Menu menu, @NotNull Inventory inventory) {
+    public final void edit(@NotNull Menu menu, @NotNull Inventory inventory, @NotNull InventoryView view) {
 
         if(inventory.getType() != InventoryType.CHEST)
             throw new IllegalArgumentException("Inventory type must be CHEST");

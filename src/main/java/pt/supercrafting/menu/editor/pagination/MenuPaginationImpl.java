@@ -2,10 +2,9 @@ package pt.supercrafting.menu.editor.pagination;
 
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Material;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -162,7 +161,7 @@ final class MenuPaginationImpl implements MenuPagination {
     }
 
     @Override
-    public void edit(@NotNull Menu menu, @NotNull Inventory inventory) {
+    public void edit(@NotNull Menu menu, @NotNull Inventory inventory, @NotNull InventoryView view) {
 
         if(this.items.isEmpty())
             return;

@@ -17,6 +17,7 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import pt.supercrafting.menu.editor.MenuUpdatable;
 import pt.supercrafting.menu.item.MenuItem;
 import pt.supercrafting.menu.slot.MenuSlot;
@@ -95,10 +96,10 @@ final class MenuClickProcessor {
         if(clickedInventory == null)
             return;
 
-        if(clickedInventory.getHolder() instanceof Menu)
-            clickMenu(event);
-        else if(clickedInventory instanceof PlayerInventory) // Player click on their own inventory
+        if(clickedInventory instanceof PlayerInventory) // Player click on their own inventory
             clickInventory(event);
+        else
+            clickMenu(event);
     }
 
     private void clickMenu(@NotNull InventoryClickEvent event) {
@@ -403,7 +404,7 @@ final class MenuClickProcessor {
 
         closeCache.put(playerId, true);
 
-        menu.callHandler(menuHandler -> menuHandler.onClose(player));
+        menu.close();
     }
 
 }
