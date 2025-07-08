@@ -4,6 +4,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import pt.supercrafting.menu.bridge.ItemBridge;
 
 import java.util.Objects;
 
@@ -20,12 +21,12 @@ public class InventorySlot implements MenuSlot {
     @Override
     public @NotNull ItemStack itemStack() {
         ItemStack itemStack = inventory.getItem(index);
-        return Objects.requireNonNullElse(itemStack, ItemStack.empty());
+        return Objects.requireNonNullElse(itemStack, ItemBridge.empty());
     }
 
     @Override
     public void itemStack(@Nullable ItemStack itemStack) {
-        inventory.setItem(index, Objects.requireNonNullElse(itemStack, ItemStack.empty()));
+        inventory.setItem(index, Objects.requireNonNullElse(itemStack, ItemBridge.empty()));
     }
 
     @Override

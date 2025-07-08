@@ -17,10 +17,7 @@ abstract class MenuDecorations implements MenuDecoration {
 
     public MenuDecorations(@NotNull ItemStack icon) {
         Objects.requireNonNull(icon);
-
-        ItemStack noHover = icon.clone();
-        noHover.editMeta(meta -> meta.setHideTooltip(true));
-        this.slot = new ForbiddenSlot(noHover);
+        this.slot = new ForbiddenSlot(icon);
     }
 
     protected abstract int @NotNull[] generateSlots(int rows);

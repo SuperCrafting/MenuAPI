@@ -4,9 +4,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-import io.papermc.paper.entity.PlayerGiveResult;
 import it.unimi.dsi.fastutil.ints.*;
-import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.*;
@@ -17,7 +15,7 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
-import pt.supercrafting.menu.editor.MenuUpdatable;
+import pt.supercrafting.menu.bridge.ItemBridge;
 import pt.supercrafting.menu.item.MenuItem;
 import pt.supercrafting.menu.slot.MenuSlot;
 
@@ -56,10 +54,10 @@ final class MenuClickProcessor {
         ));
 
         if(hasBundleActions) {
-            defaultBehaviors.add(InventoryAction.PICKUP_ALL_INTO_BUNDLE);
-            defaultBehaviors.add(InventoryAction.PLACE_ALL_INTO_BUNDLE);
-            defaultBehaviors.add(InventoryAction.PICKUP_SOME_INTO_BUNDLE);
-            defaultBehaviors.add(InventoryAction.PLACE_SOME_INTO_BUNDLE);
+            defaultBehaviors.add(getInventoryAction("PLACE_ALL_INTO_BUNDLE"));
+            defaultBehaviors.add(getInventoryAction("PICKUP_ALL_INTO_BUNDLE"));
+            defaultBehaviors.add(getInventoryAction("PICKUP_SOME_INTO_BUNDLE"));
+            defaultBehaviors.add(getInventoryAction("PLACE_SOME_INTO_BUNDLE"));
         }
 
         DEFAULT_BEHAVIORS = Collections.unmodifiableSet(defaultBehaviors);
@@ -78,6 +76,15 @@ final class MenuClickProcessor {
         IntList reversedPrioritySlots = new IntArrayList(prioritySlots);
         Collections.reverse(reversedPrioritySlots);
         REVERSED_PLAYER_INVENTORY_SLOTS = IntLists.unmodifiable(reversedPrioritySlots);
+    }
+
+    @NotNull
+    private static InventoryAction getInventoryAction(@NotNull String name) {
+        try {
+            return InventoryAction.valueOf(name);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid InventoryAction name: " + name, e);
+        }
     }
 
     private final Menu menu;
@@ -120,7 +127,7 @@ final class MenuClickProcessor {
 
         ClickType clickType = event.getClick();
         ItemStack cursor = event.getCursor();
-        boolean isAdd = !cursor.isEmpty() && !clickType.isShiftClick();
+        boolean isAdd = !ItemBridge.isEmpty(cursor) && !clickType.isShiftClick();
 
         boolean handled;
         if(isAdd) {
@@ -149,7 +156,7 @@ final class MenuClickProcessor {
                 IntList slots = new IntArrayList(PLAYER_INVENTORY_SLOTS.size());
                 for (int i = 0; i < inventory.getSize(); i++) {
                     ItemStack itemStack = inventory.getItem(i);
-                    if(itemStack != null && !itemStack.isEmpty() && itemStack.isSimilar(result))
+                    if(itemStack != null && !ItemBridge.isEmpty(itemStack) && itemStack.isSimilar(result))
                         slots.add(i);
                 }
 
@@ -161,31 +168,31 @@ final class MenuClickProcessor {
 
                     ItemStack playerItem = inventory.getItem(playerSlot);
                     if(playerItem == null)
-                        playerItem = ItemStack.empty();
+                        playerItem = ItemBridge.empty();
 
-                    if(!playerItem.isEmpty() && !playerItem.isSimilar(result))
+                    if(!ItemBridge.isEmpty(playerItem) && !playerItem.isSimilar(result))
                         continue;
 
-                    int allowedToAdd = playerItem.isEmpty() ? result.getMaxStackSize() : playerItem.getMaxStackSize() - playerItem.getAmount();
+                    int allowedToAdd = ItemBridge.isEmpty(playerItem) ? result.getMaxStackSize() : playerItem.getMaxStackSize() - playerItem.getAmount();
                     if(allowedToAdd <= 0)
                         continue;
 
                     int toAdd = Math.min(allowedToAdd, result.getAmount());
-                    ItemStack newPlayerItem = result.asQuantity(playerItem.getAmount() + toAdd);
+                    ItemStack newPlayerItem = ItemBridge.asQuantity(playerItem, playerItem.getAmount() + toAdd);
                     inventory.setItem(playerSlot, newPlayerItem);
 
-                    result = result.asQuantity(result.getAmount() - toAdd);
+                    result = ItemBridge.asQuantity(result, result.getAmount() - toAdd);
                     if(result.getAmount() <= 0)
                         break;
 
                 }
 
-                if(!result.isEmpty()) {
+                if(!ItemBridge.isEmpty(result)) {
                     MenuSlot.Add add = new MenuSlot.PlayerAdd(result, result.getAmount(), player);
                     slot.add(add);
 
                     ItemStack remaining = add.getResult();
-                    if(!remaining.isEmpty()) // Drop overflow items
+                    if(!ItemBridge.isEmpty(remaining)) // Drop overflow items
                         player.getWorld().dropItemNaturally(player.getLocation(), remaining);
                 }
 
@@ -222,23 +229,30 @@ final class MenuClickProcessor {
         Inventory inventory = player.getInventory();
 
         ItemStack hotbarItem =inventory.getItem(hotbarButton);
-        if(hotbarItem != null && !hotbarItem.isEmpty()) {
+        if(hotbarItem != null && ItemBridge.isEmpty(hotbarItem)) {
 
             MenuSlot.Add add = new MenuSlot.PlayerAdd(hotbarItem, hotbarItem.getAmount(), player);
             slot.add(add);
 
             ItemStack remaining = add.getResult();
-            if(remaining.isEmpty())
-                remaining = ItemStack.empty();
+            if(ItemBridge.isEmpty(remaining))
+                remaining = ItemBridge.empty();
 
             inventory.setItem(hotbarButton, remaining);
         }
 
         hotbarItem = inventory.getItem(hotbarButton); // Updated
-        if(hotbarItem == null || hotbarItem.isEmpty())
+        if(hotbarItem == null || ItemBridge.isEmpty(hotbarItem))
             player.getInventory().setItem(hotbarButton, result);
-        else
-            player.give(hotbarItem);
+        else {
+            //player.give(hotbarItem);
+            Map<Integer, ItemStack> overflow = player.getInventory().addItem(hotbarItem);
+            for (ItemStack drop : overflow.values()) {
+                if(!ItemBridge.isEmpty(drop)) {
+                    player.getWorld().dropItemNaturally(player.getLocation(), drop);
+                }
+            }
+        }
 
         menu.refresh();
     }
@@ -259,8 +273,8 @@ final class MenuClickProcessor {
 
                 ItemStack playerItem = playerInventory.getItem(slot);
                 if(playerItem == null)
-                    playerItem = ItemStack.empty();
-                if(playerItem.isEmpty() || !playerItem.isSimilar(cursor))
+                    playerItem = ItemBridge.empty();
+                if(ItemBridge.isEmpty(playerItem) || !playerItem.isSimilar(cursor))
                     continue;
 
                 int allowedToAdd = cursor.getMaxStackSize() - cursor.getAmount();
@@ -268,9 +282,9 @@ final class MenuClickProcessor {
                     continue;
 
                 int toAdd = Math.min(allowedToAdd, playerItem.getAmount());
-                ItemStack newCursor = cursor.asQuantity(cursor.getAmount() + toAdd);
+                ItemStack newCursor = ItemBridge.asQuantity(cursor, cursor.getAmount() + toAdd);
 
-                ItemStack newPlayerItem = playerItem.asQuantity(playerItem.getAmount() - toAdd);
+                ItemStack newPlayerItem = ItemBridge.asQuantity(playerItem, playerItem.getAmount() - toAdd);
                 playerInventory.setItem(slot, newPlayerItem);
                 cursor = newCursor;
 
@@ -281,7 +295,7 @@ final class MenuClickProcessor {
         }
 
         ItemStack currentItem = event.getCurrentItem();
-        if(currentItem == null || currentItem.isEmpty())
+        if(currentItem == null || ItemBridge.isEmpty(currentItem))
             return;
 
         if(DEFAULT_BEHAVIORS.contains(action))
@@ -334,7 +348,7 @@ final class MenuClickProcessor {
         InventoryView view = event.getView();
         for (int slot : slots) {
 
-            Inventory inventory = view.getInventory(slot);
+            Inventory inventory = slot < view.getTopInventory().getSize() ? view.getTopInventory() : view.getBottomInventory();
             if (inventory == null)
                 continue;
 
@@ -353,7 +367,7 @@ final class MenuClickProcessor {
 
         IntList draggedSlots = new IntArrayList(slotsByInventory.get(menuInventory));
         ItemStack cursor = event.getOldCursor();
-        if(cursor.isEmpty())
+        if(ItemBridge.isEmpty(cursor))
             return;
 
         event.setCancelled(false);
@@ -374,23 +388,29 @@ final class MenuClickProcessor {
             menuSlot.add(add);
 
             ItemStack result = add.getResult();
-            if(!result.isEmpty() && !result.isSimilar(cursor)) {
+            if(!ItemBridge.isEmpty(result) && !result.isSimilar(cursor)) {
                 overFlow.add(result);
             } else if(result.isSimilar(cursor) && !add.isSuccessful())
                 giveBack += amountPerSlot;
 
         }
 
-        ItemStack newCursor = cursor.asQuantity(giveBack);
+        ItemStack newCursor = ItemBridge.asQuantity(cursor, giveBack);
         event.setCursor(newCursor);
 
         Plugin plugin = MenuManager.instance.getPlugin();
-        player.getScheduler().runDelayed(plugin, (s) -> menu.refresh(), () -> {}, 3);
+        //player.getScheduler().runDelayed(plugin, (s) -> menu.refresh(), () -> {}, 3);
 
-        if(!overFlow.isEmpty())
-            player.give(overFlow);
+        if(!overFlow.isEmpty()) {
+            //player.give(overFlow);
+            for (ItemStack itemStack : overFlow) {
+                if(!ItemBridge.isEmpty(itemStack)) {
+                    player.getWorld().dropItemNaturally(player.getLocation(), itemStack);
+                }
+            }
+        }
 
-        //Bukkit.getScheduler().runTaskLater(plugin, menu::refresh, 1); // Think about a better way to do this
+        Bukkit.getScheduler().runTaskLater(plugin, menu::refresh, 1); // Think about a better way to do this
 
     }
 
