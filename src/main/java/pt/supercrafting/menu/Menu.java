@@ -1,10 +1,10 @@
 package pt.supercrafting.menu;
 
-import it.unimi.dsi.fastutil.Function;
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMaps;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryType;
@@ -58,10 +58,11 @@ public abstract class Menu implements InventoryHolder {
 
         this.clickProcessor = new MenuClickProcessor(this);
 
+        String legacyTitle = LegacyComponentSerializer.legacySection().serialize(title);
         if(type == InventoryType.CHEST)
-            this.handle = Bukkit.createInventory(this, size, title);
+            this.handle = Bukkit.createInventory(this, size, legacyTitle);
         else
-            this.handle = Bukkit.createInventory(this, type, title);
+            this.handle = Bukkit.createInventory(this, type, legacyTitle);
     }
 
     public void refresh() {

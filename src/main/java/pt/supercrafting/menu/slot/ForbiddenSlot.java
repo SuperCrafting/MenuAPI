@@ -2,13 +2,14 @@ package pt.supercrafting.menu.slot;
 
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
+import pt.supercrafting.menu.bridge.ItemBridge;
 
 public record ForbiddenSlot(@NotNull ItemStack icon) implements MenuSlot {
 
     public static final ForbiddenSlot INSTANCE = new ForbiddenSlot();
 
     private ForbiddenSlot() {
-        this(ItemStack.empty());
+        this(ItemBridge.empty());
     }
 
     @Override
@@ -18,7 +19,7 @@ public record ForbiddenSlot(@NotNull ItemStack icon) implements MenuSlot {
 
     @Override
     public @NotNull ItemStack itemStack() {
-        return ItemStack.empty();
+        return ItemBridge.empty();
     }
 
     @Override

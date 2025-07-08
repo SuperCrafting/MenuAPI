@@ -31,3 +31,13 @@ jobs:
         with:
           name: Artifacts
           path: build/libs/*.jar
+
+      - name: Upload to maven
+        env:
+          CI: true
+          BUILD_NUMBER: ${{ github.run_number }}
+          GITHUB_TOKEN: ${{ secrets.PACKAGE_SECRET }}
+          GITHUB_USERNAME: ${{ github.repository_owner }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run:
+          ./gradlew publish
