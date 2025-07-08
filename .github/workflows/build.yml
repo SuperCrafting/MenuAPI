@@ -34,8 +34,10 @@ jobs:
 
       - name: Upload to maven
         env:
+          CI: true
+          BUILD_NUMBER: ${{ github.run_number }}
           GITHUB_TOKEN: ${{ secrets.PACKAGE_SECRET }}
-          GITHUB_USERNAME: ${{ github.actor }}
+          GITHUB_USERNAME: ${{ github.repository_owner }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run:
-          ./gradlew publish --no-daemon --no-parallel --stacktrace --info
+          ./gradlew publish
