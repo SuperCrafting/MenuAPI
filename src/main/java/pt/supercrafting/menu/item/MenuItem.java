@@ -5,7 +5,7 @@ import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.NotNull;
-import pt.supercrafting.menu.bridge.ItemBridge;
+import pt.supercrafting.menu.bridge.PaperBridge;
 import pt.supercrafting.menu.slot.MenuSlot;
 
 import java.util.Objects;
@@ -50,7 +50,7 @@ public class MenuItem implements MenuSlot {
 
     @Override
     public @NotNull ItemStack itemStack() {
-        return ItemBridge.empty();
+        return PaperBridge.empty();
     }
 
     @Override

@@ -14,6 +14,8 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
+import pt.supercrafting.menu.bridge.InventoryFactory;
+import pt.supercrafting.menu.bridge.PaperBridge;
 import pt.supercrafting.menu.editor.MenuEditor;
 import pt.supercrafting.menu.editor.decoration.MenuDecoration;
 import pt.supercrafting.menu.handler.MenuHandler;
@@ -58,11 +60,11 @@ public abstract class Menu implements InventoryHolder {
 
         this.clickProcessor = new MenuClickProcessor(this);
 
-        String legacyTitle = LegacyComponentSerializer.legacySection().serialize(title);
+        InventoryFactory factory = PaperBridge.getInventoryFactory();
         if(type == InventoryType.CHEST)
-            this.handle = Bukkit.createInventory(this, size, legacyTitle);
+            this.handle = factory.createInventory(this, title, size);
         else
-            this.handle = Bukkit.createInventory(this, type, legacyTitle);
+            this.handle = factory.createInventory(this, title, type);
     }
 
     public void refresh() {

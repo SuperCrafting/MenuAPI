@@ -4,7 +4,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import pt.supercrafting.menu.bridge.ItemBridge;
+import pt.supercrafting.menu.bridge.PaperBridge;
 
 import java.util.Objects;
 
@@ -29,7 +29,7 @@ public interface MenuSlot {
     default void take(Take take) {
 
         ItemStack itemStack = itemStack();
-        if(ItemBridge.isEmpty(itemStack)) {
+        if(PaperBridge.isEmpty(itemStack)) {
             take.cancel();
             return;
         }
@@ -38,10 +38,10 @@ public interface MenuSlot {
         if(take.getType() == Take.Type.HALF)
             toRemove = (int) Math.ceil(toRemove / 2.0d);
 
-        ItemStack result = ItemBridge.asQuantity(itemStack, toRemove);
+        ItemStack result = PaperBridge.asQuantity(itemStack, toRemove);
         take.setResult(result);
 
-        ItemStack newItemStack = ItemBridge.asQuantity(itemStack, itemStack.getAmount() - toRemove);
+        ItemStack newItemStack = PaperBridge.asQuantity(itemStack, itemStack.getAmount() - toRemove);
         itemStack(newItemStack);
 
     }
@@ -54,11 +54,11 @@ public interface MenuSlot {
 
         public Take(@NotNull Type type) {
             this.type = Objects.requireNonNull(type);
-            this.result = ItemBridge.empty();
+            this.result = PaperBridge.empty();
         }
 
         public void cancel() {
-            setResult(ItemBridge.empty());
+            setResult(PaperBridge.empty());
             successful = false;
         }
 
@@ -109,7 +109,7 @@ public interface MenuSlot {
 
     default boolean accept(@NotNull ItemStack itemStack) {
         ItemStack current = itemStack();
-        return ItemBridge.isEmpty(current) || current.isSimilar(itemStack);
+        return PaperBridge.isEmpty(current) || current.isSimilar(itemStack);
     }
 
     default void add(Add add) {
@@ -123,12 +123,12 @@ public interface MenuSlot {
         int amount = add.getAmount();
         ItemStack current = itemStack();
 
-        if(ItemBridge.isEmpty(current)) {
+        if(PaperBridge.isEmpty(current)) {
 
-            ItemStack newItemStack = ItemBridge.asQuantity(itemStack, amount);
+            ItemStack newItemStack = PaperBridge.asQuantity(itemStack, amount);
             itemStack(newItemStack);
 
-            ItemStack result = ItemBridge.asQuantity(itemStack, itemStack.getAmount() - amount);
+            ItemStack result = PaperBridge.asQuantity(itemStack, itemStack.getAmount() - amount);
             add.setResult(result);
             return;
         }
@@ -139,12 +139,12 @@ public interface MenuSlot {
             return;
         }
 
-        ItemStack newItemStack = ItemBridge.asQuantity(current, current.getAmount() + canAdd);
+        ItemStack newItemStack = PaperBridge.asQuantity(current, current.getAmount() + canAdd);
         itemStack(newItemStack);
 
-        ItemStack result = ItemBridge.asQuantity(itemStack, itemStack.getAmount() - canAdd);
-        if(ItemBridge.isEmpty(result))
-            result = ItemBridge.empty();
+        ItemStack result = PaperBridge.asQuantity(itemStack, itemStack.getAmount() - canAdd);
+        if(PaperBridge.isEmpty(result))
+            result = PaperBridge.empty();
 
         add.setResult(result);
 
@@ -160,7 +160,7 @@ public interface MenuSlot {
         public Add(@NotNull ItemStack itemStack, int amount) {
             this.itemStack = Objects.requireNonNull(itemStack);
             this.amount = amount;
-            this.result = ItemBridge.empty();
+            this.result = PaperBridge.empty();
         }
 
         public void cancel() {

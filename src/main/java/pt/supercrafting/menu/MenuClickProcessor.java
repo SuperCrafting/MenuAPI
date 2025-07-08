@@ -15,7 +15,7 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.plugin.Plugin;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
-import pt.supercrafting.menu.bridge.ItemBridge;
+import pt.supercrafting.menu.bridge.PaperBridge;
 import pt.supercrafting.menu.item.MenuItem;
 import pt.supercrafting.menu.slot.MenuSlot;
 
@@ -127,7 +127,7 @@ final class MenuClickProcessor {
 
         ClickType clickType = event.getClick();
         ItemStack cursor = event.getCursor();
-        boolean isAdd = !ItemBridge.isEmpty(cursor) && !clickType.isShiftClick();
+        boolean isAdd = !PaperBridge.isEmpty(cursor) && !clickType.isShiftClick();
 
         boolean handled;
         if(isAdd) {
@@ -156,7 +156,7 @@ final class MenuClickProcessor {
                 IntList slots = new IntArrayList(PLAYER_INVENTORY_SLOTS.size());
                 for (int i = 0; i < inventory.getSize(); i++) {
                     ItemStack itemStack = inventory.getItem(i);
-                    if(itemStack != null && !ItemBridge.isEmpty(itemStack) && itemStack.isSimilar(result))
+                    if(itemStack != null && !PaperBridge.isEmpty(itemStack) && itemStack.isSimilar(result))
                         slots.add(i);
                 }
 
@@ -168,31 +168,31 @@ final class MenuClickProcessor {
 
                     ItemStack playerItem = inventory.getItem(playerSlot);
                     if(playerItem == null)
-                        playerItem = ItemBridge.empty();
+                        playerItem = PaperBridge.empty();
 
-                    if(!ItemBridge.isEmpty(playerItem) && !playerItem.isSimilar(result))
+                    if(!PaperBridge.isEmpty(playerItem) && !playerItem.isSimilar(result))
                         continue;
 
-                    int allowedToAdd = ItemBridge.isEmpty(playerItem) ? result.getMaxStackSize() : playerItem.getMaxStackSize() - playerItem.getAmount();
+                    int allowedToAdd = PaperBridge.isEmpty(playerItem) ? result.getMaxStackSize() : playerItem.getMaxStackSize() - playerItem.getAmount();
                     if(allowedToAdd <= 0)
                         continue;
 
                     int toAdd = Math.min(allowedToAdd, result.getAmount());
-                    ItemStack newPlayerItem = ItemBridge.asQuantity(playerItem, playerItem.getAmount() + toAdd);
+                    ItemStack newPlayerItem = PaperBridge.asQuantity(playerItem, playerItem.getAmount() + toAdd);
                     inventory.setItem(playerSlot, newPlayerItem);
 
-                    result = ItemBridge.asQuantity(result, result.getAmount() - toAdd);
+                    result = PaperBridge.asQuantity(result, result.getAmount() - toAdd);
                     if(result.getAmount() <= 0)
                         break;
 
                 }
 
-                if(!ItemBridge.isEmpty(result)) {
+                if(!PaperBridge.isEmpty(result)) {
                     MenuSlot.Add add = new MenuSlot.PlayerAdd(result, result.getAmount(), player);
                     slot.add(add);
 
                     ItemStack remaining = add.getResult();
-                    if(!ItemBridge.isEmpty(remaining)) // Drop overflow items
+                    if(!PaperBridge.isEmpty(remaining)) // Drop overflow items
                         player.getWorld().dropItemNaturally(player.getLocation(), remaining);
                 }
 
@@ -229,26 +229,26 @@ final class MenuClickProcessor {
         Inventory inventory = player.getInventory();
 
         ItemStack hotbarItem =inventory.getItem(hotbarButton);
-        if(hotbarItem != null && ItemBridge.isEmpty(hotbarItem)) {
+        if(hotbarItem != null && PaperBridge.isEmpty(hotbarItem)) {
 
             MenuSlot.Add add = new MenuSlot.PlayerAdd(hotbarItem, hotbarItem.getAmount(), player);
             slot.add(add);
 
             ItemStack remaining = add.getResult();
-            if(ItemBridge.isEmpty(remaining))
-                remaining = ItemBridge.empty();
+            if(PaperBridge.isEmpty(remaining))
+                remaining = PaperBridge.empty();
 
             inventory.setItem(hotbarButton, remaining);
         }
 
         hotbarItem = inventory.getItem(hotbarButton); // Updated
-        if(hotbarItem == null || ItemBridge.isEmpty(hotbarItem))
+        if(hotbarItem == null || PaperBridge.isEmpty(hotbarItem))
             player.getInventory().setItem(hotbarButton, result);
         else {
             //player.give(hotbarItem);
             Map<Integer, ItemStack> overflow = player.getInventory().addItem(hotbarItem);
             for (ItemStack drop : overflow.values()) {
-                if(!ItemBridge.isEmpty(drop)) {
+                if(!PaperBridge.isEmpty(drop)) {
                     player.getWorld().dropItemNaturally(player.getLocation(), drop);
                 }
             }
@@ -273,8 +273,8 @@ final class MenuClickProcessor {
 
                 ItemStack playerItem = playerInventory.getItem(slot);
                 if(playerItem == null)
-                    playerItem = ItemBridge.empty();
-                if(ItemBridge.isEmpty(playerItem) || !playerItem.isSimilar(cursor))
+                    playerItem = PaperBridge.empty();
+                if(PaperBridge.isEmpty(playerItem) || !playerItem.isSimilar(cursor))
                     continue;
 
                 int allowedToAdd = cursor.getMaxStackSize() - cursor.getAmount();
@@ -282,9 +282,9 @@ final class MenuClickProcessor {
                     continue;
 
                 int toAdd = Math.min(allowedToAdd, playerItem.getAmount());
-                ItemStack newCursor = ItemBridge.asQuantity(cursor, cursor.getAmount() + toAdd);
+                ItemStack newCursor = PaperBridge.asQuantity(cursor, cursor.getAmount() + toAdd);
 
-                ItemStack newPlayerItem = ItemBridge.asQuantity(playerItem, playerItem.getAmount() - toAdd);
+                ItemStack newPlayerItem = PaperBridge.asQuantity(playerItem, playerItem.getAmount() - toAdd);
                 playerInventory.setItem(slot, newPlayerItem);
                 cursor = newCursor;
 
@@ -295,7 +295,7 @@ final class MenuClickProcessor {
         }
 
         ItemStack currentItem = event.getCurrentItem();
-        if(currentItem == null || ItemBridge.isEmpty(currentItem))
+        if(currentItem == null || PaperBridge.isEmpty(currentItem))
             return;
 
         if(DEFAULT_BEHAVIORS.contains(action))
@@ -367,7 +367,7 @@ final class MenuClickProcessor {
 
         IntList draggedSlots = new IntArrayList(slotsByInventory.get(menuInventory));
         ItemStack cursor = event.getOldCursor();
-        if(ItemBridge.isEmpty(cursor))
+        if(PaperBridge.isEmpty(cursor))
             return;
 
         event.setCancelled(false);
@@ -388,14 +388,14 @@ final class MenuClickProcessor {
             menuSlot.add(add);
 
             ItemStack result = add.getResult();
-            if(!ItemBridge.isEmpty(result) && !result.isSimilar(cursor)) {
+            if(!PaperBridge.isEmpty(result) && !result.isSimilar(cursor)) {
                 overFlow.add(result);
             } else if(result.isSimilar(cursor) && !add.isSuccessful())
                 giveBack += amountPerSlot;
 
         }
 
-        ItemStack newCursor = ItemBridge.asQuantity(cursor, giveBack);
+        ItemStack newCursor = PaperBridge.asQuantity(cursor, giveBack);
         event.setCursor(newCursor);
 
         Plugin plugin = MenuManager.instance.getPlugin();
@@ -404,7 +404,7 @@ final class MenuClickProcessor {
         if(!overFlow.isEmpty()) {
             //player.give(overFlow);
             for (ItemStack itemStack : overFlow) {
-                if(!ItemBridge.isEmpty(itemStack)) {
+                if(!PaperBridge.isEmpty(itemStack)) {
                     player.getWorld().dropItemNaturally(player.getLocation(), itemStack);
                 }
             }
