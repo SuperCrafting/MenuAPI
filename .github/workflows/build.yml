@@ -3,7 +3,7 @@ name: Build
 on:
   push:
     branches:
-      - main
+      - ci
 
 jobs:
   build:
@@ -31,3 +31,11 @@ jobs:
         with:
           name: Artifacts
           path: build/libs/*.jar
+
+      - name: Upload to maven
+        env:
+          GITHUB_TOKEN: ${{ secrets.PACKAGE_SECRET }}
+          GITHUB_USERNAME: ${{ github.actor }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run:
+          ./gradlew publish --no-daemon --no-parallel --stacktrace --info
